@@ -9,7 +9,7 @@ interface Vacancy {
   title: string
   description: string
   salary: string
-  employer_id: string
+  employers_id: string
   created_at: string
   urgent?: boolean
   district?: string
@@ -32,7 +32,7 @@ interface Application {
   }
 }
 
-export default function EmployerDashboard() {
+export default function EmployersDashboard() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([])
   const [applications, setApplications] = useState<Application[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -56,11 +56,11 @@ export default function EmployerDashboard() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      // Fetch employer's vacancies
+      // Fetch employers's vacancies
       const { data: vacData } = await supabase
         .from('vacancies')
         .select('*')
-        .eq('employer_id', session.user.id)
+        .eq('employers_id', session.user.id)
         .order('created_at', { ascending: false })
 
       setVacancies(vacData || [])
@@ -107,7 +107,7 @@ export default function EmployerDashboard() {
           title: formData.title,
           description: formData.description,
           salary: formData.salary,
-          employer_id: session.user.id,
+          employers_id: session.user.id,
           urgent: formData.urgent,
           district: formData.district,
           type: formData.type

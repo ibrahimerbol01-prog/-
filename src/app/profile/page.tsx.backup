@@ -14,7 +14,7 @@ interface Profile {
   avatar_url?: string
   telegram_id?: number
   telegram_username?: string
-  role: 'worker' | 'employer'
+  role: 'worker' | 'employers'
   skills: string[]
   experience: boolean
   experience_text: string
@@ -25,7 +25,7 @@ interface Profile {
   created_at: string
   updated_at: string
   link_code?: string
-  // employer fields
+  // employers fields
   company_name?: string
   industry?: string
   company_description?: string
@@ -276,8 +276,8 @@ export default function ProfilePage() {
           </>
         )}
 
-        {/* Employer Fields */}
-        {profile.role === 'employer' && (
+        {/* Employers Fields */}
+        {profile.role === 'employers' && (
           <>
             <div className="mb-8">
               <h2 className="h2-text text-primary mb-6">О компании</h2>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
  
 interface ProfileData {
-  role: 'worker' | 'employer'
+  role: 'worker' | 'employers'
   full_name: string
   age: number
   iin: string
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
         desired_salary: profileData.desired_salary,
         district: profileData.district,
         portfolio_items: profileData.portfolio_items,
-        ...(profileData.role === 'employer' && {
+        ...(profileData.role === 'employers' && {
           company_name: profileData.company_name,
           industry: profileData.industry,
           company_description: profileData.company_description,
@@ -201,7 +201,7 @@ export default function OnboardingPage() {
                   <p className="text-secondary">Найду подходящую вакансию в Актау</p>
                 </button>
                 <button
-                  onClick={() => { updateProfileData('role', 'employer'); nextStep() }}
+                  onClick={() => { updateProfileData('role', 'employers'); nextStep() }}
                   className="card-hover bg-card border border-border rounded-2xl p-8 text-left transition-all"
                 >
                   <div className="text-6xl mb-4">🏢</div>
@@ -379,8 +379,8 @@ export default function OnboardingPage() {
             </div>
           )}
  
-          {/* Step 3: Employer Profile */}
-          {currentStep === 3 && profileData.role === 'employer' && (
+          {/* Step 3: Employers Profile */}
+          {currentStep === 3 && profileData.role === 'employers' && (
             <div>
               <h2 className="h2-text text-primary mb-6">О компании</h2>
               <div className="space-y-6">
@@ -498,7 +498,7 @@ export default function OnboardingPage() {
                       <p><span className="text-secondary">Район:</span> {profileData.district || 'Не указан'}</p>
                     </>
                   )}
-                  {profileData.role === 'employer' && (
+                  {profileData.role === 'employers' && (
                     <p><span className="text-secondary">Компания:</span> {profileData.company_name}</p>
                   )}
                 </div>

@@ -10,7 +10,7 @@ interface Vacancy {
   title: string
   description: string
   salary: string
-  employer_id: string
+  employers_id: string
   created_at: string
   urgent?: boolean
   district?: string
@@ -54,7 +54,7 @@ export default function VacanciesPage() {
         setUser({ id: session.user.id, role: profile?.role })
       }
 
-      // Fetch vacancies with employer info
+      // Fetch vacancies with employers info
       const { data } = await supabase
         .from('vacancies')
         .select(`
@@ -304,7 +304,7 @@ export default function VacanciesPage() {
                         >
                           Откликнуться
                         </button>
-                      ) : user?.role === 'employer' ? (
+                      ) : user?.role === 'employers' ? (
                         <div className="text-sm text-secondary">
                           Только для соискателей
                         </div>

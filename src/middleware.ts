@@ -39,7 +39,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Protected routes
-  const protectedRoutes = ['/profile', '/employer', '/worker']
+  const protectedRoutes = ['/profile', '/employers', '/worker']
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
   if (isProtectedRoute && !session) {
@@ -47,14 +47,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // Role-based protection
-  if (pathname.startsWith('/employer') && session) {
+  if (pathname.startsWith('/employers') && session) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', session.user.id)
       .single()
 
-    if (profile?.role !== 'employer') {
+    if (profile?.role !== 'employers') {
       return NextResponse.redirect(new URL('/', req.url))
     }
   }
@@ -63,5 +63,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/employer/:path*', '/worker/:path*'],
+  matcher: ['/profile/:path*', '/employers/:path*', '/worker/:path*'],
 }

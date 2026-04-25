@@ -10,7 +10,7 @@ interface Vacancy {
   title: string
   description: string
   salary: string
-  employer_id: string
+  employers_id: string
   created_at: string
   urgent?: boolean
   district?: string
@@ -68,7 +68,7 @@ export default function Home() {
             <Link href="/vacancies" className="btn-primary px-8 py-4 text-lg">
               Я ищу работу →
             </Link>
-            <Link href="/employer" className="btn-secondary px-8 py-4 text-lg">
+            <Link href="/employers" className="btn-secondary px-8 py-4 text-lg">
               Я работодатель →
             </Link>
           </div>

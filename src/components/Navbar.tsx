@@ -130,8 +130,8 @@ export default function Navbar() {
                     <Link href="/profile" className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                       Профиль
                     </Link>
-                    <Link href={profile?.role === 'employer' ? '/employer' : '/worker'} className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors">
-                      {profile?.role === 'employer' ? 'Мои вакансии' : 'Мои отклики'}
+                    <Link href={profile?.role === 'employers' ? '/employers' : '/worker'} className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                      {profile?.role === 'employers' ? 'Мои вакансии' : 'Мои отклики'}
                     </Link>
                     <button
                       onClick={handleSignOut}
@@ -148,7 +148,7 @@ export default function Navbar() {
               )}
 
               {/* Post Job Button */}
-              <Link href="/employer" className="hidden md:block btn-primary px-6">
+              <Link href="/employers" className="hidden md:block btn-primary px-6">
                 Разместить вакансию
               </Link>
 
@@ -178,10 +178,7 @@ export default function Navbar() {
                 <Link href="/employers" className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                   Работодателям
                 </Link>
-                <Link href="/about" className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                  О нас
-                </Link>
-                <Link href="/employer" className="block mx-4 mt-4 btn-primary text-center">
+                <Link href="/employers" className="block mx-4 mt-4 btn-primary text-center">
                   Разместить вакансию
                 </Link>
               </div>

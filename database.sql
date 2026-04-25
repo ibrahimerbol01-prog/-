@@ -9,7 +9,7 @@ create table if not exists profiles (
   avatar_url text,
   telegram_id bigint unique,
   telegram_username text,
-  role text default 'worker', -- 'worker' or 'employer'
+  role text default 'worker', -- 'worker' or 'employers'
   skills text[] default '{}',
   experience boolean default false,
   experience_text text,
@@ -28,6 +28,6 @@ create policy "profiles_read" on profiles for select using (true);
 create policy "profiles_own" on profiles for all using (auth.uid() = id);
 
 -- Assuming vacancies and applications tables exist, add columns:
--- alter table vacancies add column if not exists employer_id uuid references profiles(id);
+-- alter table vacancies add column if not exists employers_id uuid references profiles(id);
 -- alter table applications add column if not exists worker_id uuid references profiles(id);
 -- alter table workers add column if not exists profile_id uuid references profiles(id);

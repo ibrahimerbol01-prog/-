@@ -52,7 +52,7 @@ npm run dev
 
 - `src/app/auth/` - Страницы аутентификации
 - `src/app/profile/` - Профиль пользователя
-- `src/app/employer/` - Дашборд работодателя
+- `src/app/employers/` - Дашборд работодателя
 - `src/app/worker/` - Дашборд работника
 - `src/components/` - Компоненты
 - `src/lib/` - Утилиты (Supabase клиент)
