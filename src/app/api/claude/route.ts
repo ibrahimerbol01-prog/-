@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'x-api-key': process.env.ANTHROPIC_API_KEY='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',
+      
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
