@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import AIAssistant from '@/components/AIAssistant'
+import QuickApply from '@/components/QuickApply'
+import SaveJobButton from '@/components/SaveJobButton'
 
 interface Vacancy {
   id: string
@@ -25,27 +27,63 @@ interface Vacancy {
 export default function Home() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null)
+  const [showQuickApply, setShowQuickApply] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [stats, setStats] = useState({ vacancies: 0, workers: 0, districts: 34 })
 
   useEffect(() => {
-    const fetchVacancies = async () => {
-      const { data } = await supabase
-        .from('vacancies')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            company_name,
-            role
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(6)
+    // Fetch user session
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUserId(session?.user?.id || null)
+    }
+    getSession()
+  }, [])
 
-      setVacancies(data || [])
-      setLoading(false)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch vacancies
+        const { data, count } = await supabase
+          .from('vacancies')
+          .select(`
+            *,
+            profiles (
+              full_name,
+              company_name,
+              role
+            )
+          `, { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .limit(6)
+
+        setVacancies(data || [])
+
+        // Fetch stats
+        const { count: vacancyCount } = await supabase
+          .from('vacancies')
+          .select('id', { count: 'exact', head: true })
+
+        const { count: workerCount } = await supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .eq('role', 'worker')
+
+        setStats({
+          vacancies: vacancyCount || 0,
+          workers: workerCount || 0,
+          districts: 34
+        })
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setLoading(false)
+      }
     }
 
-    fetchVacancies()
+    fetchData()
   }, [])
 
   return (
@@ -76,17 +114,17 @@ export default function Home() {
           {/* Stats */}
           <div className="flex justify-center items-center space-x-8 text-white/80">
             <div className="text-center">
-              <div className="text-2xl font-bold">6</div>
+              <div className="text-2xl font-bold">{stats.vacancies}</div>
               <div className="text-sm uppercase tracking-wide">Вакансий</div>
             </div>
             <div className="w-px h-8 bg-white/20"></div>
             <div className="text-center">
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{stats.workers}</div>
               <div className="text-sm uppercase tracking-wide">Соискателей</div>
             </div>
             <div className="w-px h-8 bg-white/20"></div>
             <div className="text-center">
-              <div className="text-2xl font-bold">34</div>
+              <div className="text-2xl font-bold">{stats.districts}</div>
               <div className="text-sm uppercase tracking-wide">Района</div>
             </div>
           </div>
@@ -124,9 +162,12 @@ export default function Home() {
                   key={vacancy.id}
                   className={`card-hover ${vacancy.urgent ? 'urgent-card' : ''} bg-card border border-border rounded-2xl p-6 flex flex-col`}
                 >
-                  {/* Company */}
-                  <div className="text-sm text-secondary mb-2">
-                    {vacancy.profiles?.company_name || vacancy.profiles?.full_name}
+                  {/* Company Header with Save Button */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-secondary">
+                      {vacancy.profiles?.company_name || vacancy.profiles?.full_name}
+                    </div>
+                    <SaveJobButton vacancyId={vacancy.id} userId={userId || undefined} />
                   </div>
 
                   {/* Title */}
@@ -158,12 +199,15 @@ export default function Home() {
                   </div>
 
                   {/* Apply Button */}
-                  <Link
-                    href="/vacancies"
+                  <button
+                    onClick={() => {
+                      setSelectedVacancy(vacancy)
+                      setShowQuickApply(true)
+                    }}
                     className="w-full btn-primary text-center"
                   >
                     Откликнуться →
-                  </Link>
+                  </button>
                 </div>
               ))}
             </div>
@@ -173,6 +217,22 @@ export default function Home() {
 
       {/* AI Assistant Widget */}
       <AIAssistant />
+
+      {/* Quick Apply Modal */}
+      {selectedVacancy && (
+        <QuickApply
+          vacancy={selectedVacancy}
+          isOpen={showQuickApply}
+          onClose={() => {
+            setShowQuickApply(false)
+            setSelectedVacancy(null)
+          }}
+          onSuccess={() => {
+            // Refresh vacancies if needed
+            setVacancies(vacancies)
+          }}
+        />
+      )}
     </div>
   );
 }

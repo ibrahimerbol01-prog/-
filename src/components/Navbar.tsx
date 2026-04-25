@@ -133,6 +133,11 @@ export default function Navbar() {
                     <Link href={profile?.role === 'employers' ? '/employers' : '/worker'} className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                       {profile?.role === 'employers' ? 'Мои вакансии' : 'Мои отклики'}
                     </Link>
+                    {profile?.role === 'worker' && (
+                      <Link href="/worker/saved" className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                        Сохраненные
+                      </Link>
+                    )}
                     <button
                       onClick={handleSignOut}
                       className="block w-full text-left px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors"

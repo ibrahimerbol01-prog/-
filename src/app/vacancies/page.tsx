@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { LoadingSpinner, VacancyCardSkeleton, EmptyState } from '@/components/LoadingStates'
+import SaveJobButton from '@/components/SaveJobButton'
 
 interface Vacancy {
   id: string
@@ -151,8 +153,8 @@ export default function VacanciesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-primary">Загрузка...</div>
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
@@ -262,8 +264,11 @@ export default function VacanciesPage() {
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div className="flex-1">
                       {/* Company */}
-                      <div className="text-sm text-secondary mb-2">
-                        {vacancy.profiles?.company_name || vacancy.profiles?.full_name}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-secondary">
+                          {vacancy.profiles?.company_name || vacancy.profiles?.full_name}
+                        </div>
+                        <SaveJobButton vacancyId={vacancy.id} userId={user?.id} />
                       </div>
 
                       {/* Title */}
@@ -319,10 +324,10 @@ export default function VacanciesPage() {
               ))}
 
               {filteredVacancies.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-secondary">Вакансий не найдено</p>
-                  <p className="text-sm text-secondary mt-2">Попробуйте изменить фильтры</p>
-                </div>
+                <EmptyState
+                  title="Вакансий не найдено"
+                  description="Попробуйте изменить фильтры или вернитесь позже"
+                />
               )}
             </div>
           </div>

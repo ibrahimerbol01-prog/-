@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { LoadingSpinner, EmptyState } from '@/components/LoadingStates'
+import { useContactActions, PhoneModal } from '@/lib/contactActions'
 
 interface Application {
   id: string
@@ -26,6 +28,7 @@ interface Application {
 export default function WorkerDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -86,24 +89,66 @@ export default function WorkerDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="text-xl text-primary">Загрузка...</div>
+        <LoadingSpinner />
       </div>
     )
   }
 
+  // Filter applications by status
+  const filteredApplications = filterStatus === 'all'
+    ? applications
+    : applications.filter(app => app.status === filterStatus)
+
   return (
     <div className="min-h-screen bg-primary">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="h2-text text-primary">Мои отклики</h1>
-          <Link href="/vacancies" className="btn-primary px-6">
-            Смотреть вакансии
-          </Link>
+          <div className="flex gap-3">
+            <Link href="/worker/recommendations" className="btn-secondary px-4 py-2 text-sm">
+              💡 Рекомендации
+            </Link>
+            <Link href="/vacancies" className="btn-primary px-4 py-2 text-sm">
+              Смотреть вакансии
+            </Link>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition ${
+                filterStatus === status
+                  ? 'btn-primary'
+                  : 'bg-card border border-border text-secondary hover:bg-primary/50'
+              }`}
+            >
+              {status === 'all' && 'Все'}
+              {status === 'pending' && '⏳ Рассмотрение'}
+              {status === 'approved' && '✅ Одобрено'}
+              {status === 'rejected' && '❌ Отклонено'}
+              {status !== 'all' && (
+                <span className="ml-2 text-xs bg-white/20 px-2 py-1 rounded">
+                  {applications.filter(a => a.status === status).length}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-6">
-          {applications.map(app => (
-            <div key={app.id} className="bg-card border border-border rounded-2xl p-6 shadow-lg">
+          {filteredApplications.map(app => {
+            const contactActions = useContactActions({
+              applicantName: app.vacancies?.profiles?.company_name || 'Компания',
+              applicantPhone: '+ 7', // Placeholder - would need profile data
+              jobTitle: app.vacancies?.title || 'вакансию'
+            })
+
+            return (
+            <div key={app.id} className="bg-card border border-border rounded-2xl p-6 shadow-lg hover:border-cyan-400/50 transition">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
@@ -143,26 +188,49 @@ export default function WorkerDashboard() {
                   <div className="text-sm text-secondary">
                     Отклик отправлен: {new Date(app.created_at).toLocaleDateString('ru-RU')}
                   </div>
+
+                  {/* Contact Actions */}
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={contactActions.handleWhatsApp}
+                      className="btn-primary text-sm px-3 py-2"
+                    >
+                      💬 WhatsApp
+                    </button>
+                    <button
+                      onClick={contactActions.handlePhone}
+                      className="btn-secondary text-sm px-3 py-2"
+                    >
+                      📞 Позвонить
+                    </button>
+                  </div>
+
+                  <PhoneModal
+                    isOpen={contactActions.showPhoneModal}
+                    phone="+7 (XXX) XXX-XXXX"
+                    applicantName={app.vacancies?.profiles?.company_name || 'Компания'}
+                    onClose={() => contactActions.setShowPhoneModal(false)}
+                    onDial={contactActions.handleDial}
+                    onCopy={contactActions.handleCopyPhone}
+                  />
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
 
-          {applications.length === 0 && (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="h2-text text-primary mb-2">Нет откликов</h3>
-              <p className="text-secondary mb-6">
-                Вы еще не откликнулись ни на одну вакансию
-              </p>
-              <Link href="/vacancies" className="btn-primary px-8 py-3">
-                Найти работу
-              </Link>
-            </div>
+          {filteredApplications.length === 0 && (
+            <EmptyState
+              title={filterStatus === 'all' ? 'Нет откликов' : 'Нет откликов с этим статусом'}
+              description={filterStatus === 'all'
+                ? 'Вы еще не откликнулись ни на одну вакансию'
+                : 'Попробуйте другой фильтр'}
+              action={
+                <Link href="/vacancies" className="btn-primary px-8 py-3 inline-block">
+                  Найти работу
+                </Link>
+              }
+            />
           )}
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { useContactActions, PhoneModal } from '@/lib/contactActions'
 
 interface Vacancy {
   id: string
@@ -308,7 +309,16 @@ export default function EmployersDashboard() {
           <div>
             <h2 className="h2-text text-primary mb-6">Отклики ({applications.length})</h2>
             <div className="space-y-4">
-              {applications.map(app => (
+              {applications.map(app => {
+                // Get vacancy title for this application
+                const vacancy = vacancies.find(v => v.id === app.vacancy_id)
+                const contactActions = useContactActions({
+                  applicantName: app.profiles?.full_name || 'Соискатель',
+                  applicantPhone: app.profiles?.phone || '',
+                  jobTitle: vacancy?.title || 'вакансию'
+                })
+
+                return (
                 <div key={app.id} className="bg-card border border-border rounded-2xl p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -340,10 +350,16 @@ export default function EmployersDashboard() {
                     </span>
 
                     <div className="flex space-x-2">
-                      <button className="btn-primary text-sm px-3 py-1">
+                      <button 
+                        onClick={contactActions.handleWhatsApp}
+                        className="btn-primary text-sm px-3 py-1"
+                      >
                         WhatsApp
                       </button>
-                      <button className="btn-secondary text-sm px-3 py-1">
+                      <button 
+                        onClick={contactActions.handlePhone}
+                        className="btn-secondary text-sm px-3 py-1"
+                      >
                         Позвонить
                       </button>
                     </div>
@@ -352,8 +368,18 @@ export default function EmployersDashboard() {
                   <p className="text-xs text-secondary mt-2">
                     {new Date(app.created_at).toLocaleDateString('ru-RU')}
                   </p>
+
+                  <PhoneModal
+                    isOpen={contactActions.showPhoneModal}
+                    phone={app.profiles?.phone}
+                    applicantName={app.profiles?.full_name}
+                    onClose={() => contactActions.setShowPhoneModal(false)}
+                    onDial={contactActions.handleDial}
+                    onCopy={contactActions.handleCopyPhone}
+                  />
                 </div>
-              ))}
+                )
+              })}
 
               {applications.length === 0 && (
                 <div className="text-center py-12">
@@ -364,104 +390,6 @@ export default function EmployersDashboard() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Мои вакансии</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          {showForm ? 'Отмена' : 'Создать вакансию'}
-        </button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-900 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Новая вакансия</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Название</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Описание</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 h-24"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Зарплата</label>
-              <input
-                type="text"
-                value={formData.salary}
-                onChange={(e) => setFormData({...formData, salary: e.target.value})}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2"
-                placeholder="150 000 ₸"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              Создать
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Vacancies */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Вакансии</h2>
-          <div className="space-y-4">
-            {vacancies.map(vacancy => (
-              <div key={vacancy.id} className="bg-gray-900 p-4 rounded-lg">
-                <h3 className="font-semibold">{vacancy.title}</h3>
-                <p className="text-gray-400">{vacancy.description}</p>
-                <p className="text-green-400 font-medium">{vacancy.salary}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Applications */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Отклики</h2>
-          <div className="space-y-4">
-            {applications.map(app => (
-              <div key={app.id} className="bg-gray-900 p-4 rounded-lg">
-                <h3 className="font-semibold">{app.profiles?.full_name}</h3>
-                <p className="text-gray-400">{app.profiles?.bio}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {app.profiles?.skills?.map(skill => (
-                    <span key={skill} className="bg-blue-600 px-2 py-1 rounded text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>
