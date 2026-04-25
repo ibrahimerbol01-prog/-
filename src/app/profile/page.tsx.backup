@@ -1,0 +1,316 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
+
+interface Profile {
+  id: string
+  full_name: string
+  age: number
+  iin: string
+  phone: string
+  avatar_url?: string
+  telegram_id?: number
+  telegram_username?: string
+  role: 'worker' | 'employer'
+  skills: string[]
+  experience: boolean
+  experience_text: string
+  bio: string
+  portfolio_url?: string
+  portfolio_items: Array<{ title: string; description: string; link?: string }>
+  is_verified: boolean
+  created_at: string
+  updated_at: string
+  link_code?: string
+  // employer fields
+  company_name?: string
+  industry?: string
+  company_description?: string
+  contact_phone?: string
+}
+
+export default function ProfilePage() {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [linkCode, setLinkCode] = useState('')
+
+  useEffect(() => {
+    const getProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+
+      setUser(session.user)
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+
+      if (error) {
+        console.error(error)
+        router.push('/auth/onboarding')
+        return
+      }
+
+      setProfile(data)
+      setLinkCode(data.link_code || '')
+      setLoading(false)
+    }
+
+    getProfile()
+  }, [router])
+
+  const generateLinkCode = async () => {
+    const code = 'kaspy_link_' + Math.random().toString(36).substring(2, 8)
+    setLinkCode(code)
+
+    // Save to database
+    const { error } = await supabase
+      .from('profiles')
+      .update({ link_code: code })
+      .eq('id', profile?.id)
+
+    if (error) {
+      console.error(error)
+      alert('Ошибка при генерации кода')
+      setLinkCode('')
+    }
+  }
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!profile) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', profile.id)
+
+    if (error) {
+      console.error(error)
+      alert('Ошибка обновления профиля')
+    } else {
+      setProfile({ ...profile, ...updates })
+      setIsEditing(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="text-xl text-primary">Загрузка...</div>
+      </div>
+    )
+  }
+
+  if (!profile) return null
+
+  return (
+    <div className="min-h-screen bg-primary">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-2xl object-cover" />
+                ) : (
+                  profile.full_name.charAt(0)
+                )}
+              </div>
+              <div>
+                <h1 className="h1-text text-primary mb-2">{profile.full_name}</h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`badge ${
+                    profile.role === 'worker' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {profile.role === 'worker' ? 'Работник' : 'Работодатель'}
+                  </span>
+                  {profile.is_verified && (
+                    <span className="badge bg-yellow-500/20 text-yellow-400">
+                      ✓ Верифицирован
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="btn-primary px-6 py-3"
+            >
+              {isEditing ? 'Отмена' : 'Редактировать'}
+            </button>
+          </div>
+
+        {/* Contact Info */}
+        <div className="mb-8">
+          <h2 className="h2-text text-primary mb-6">Контакты</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white/5 rounded-xl p-4">
+              <label className="block text-sm text-secondary mb-2">Телефон</label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  className="w-full bg-white/10 border border-border rounded-lg px-4 py-3 text-primary placeholder-secondary focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              ) : (
+                <p className="text-primary font-medium">{profile.phone}</p>
+              )}
+            </div>
+
+            {profile.telegram_username && (
+              <div className="bg-white/5 rounded-xl p-4">
+                <label className="block text-sm text-secondary mb-2">Telegram</label>
+                <p className="text-primary font-medium">@{profile.telegram_username}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Telegram Linking */}
+        <div className="mb-8">
+          <h2 className="h2-text text-primary mb-4">Привязать Telegram аккаунт</h2>
+          <p className="text-secondary mb-6">
+            Для использования бота @KaspyRushBot
+          </p>
+
+          {linkCode ? (
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-xl p-6">
+              <p className="text-sm text-secondary mb-3">Отправь этот код боту:</p>
+              <code className="bg-black/50 px-4 py-3 rounded-lg text-blue-400 font-mono text-lg font-semibold">
+                {linkCode}
+              </code>
+            </div>
+          ) : (
+            <button
+              onClick={generateLinkCode}
+              className="btn-secondary px-6 py-3"
+            >
+              Сгенерировать код
+            </button>
+          )}
+        </div>
+
+        {/* Worker Fields */}
+        {profile.role === 'worker' && (
+          <>
+            {/* Skills */}
+            <div className="mb-8">
+              <h2 className="h2-text text-primary mb-6">Навыки</h2>
+              <div className="flex flex-wrap gap-3">
+                {profile.skills.map(skill => (
+                  <span key={skill} className="badge bg-blue-500/20 text-blue-400">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Experience */}
+            <div className="mb-8">
+              <h2 className="h2-text text-primary mb-6">Опыт работы</h2>
+              <div className="bg-white/5 rounded-xl p-6">
+                {profile.experience ? (
+                  <p className="text-primary">{profile.experience_text}</p>
+                ) : (
+                  <p className="text-secondary">Нет опыта работы</p>
+                )}
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div className="mb-8">
+              <h2 className="h2-text text-primary mb-6">О себе</h2>
+              <div className="bg-white/5 rounded-xl p-6">
+                {isEditing ? (
+                  <textarea
+                    value={profile.bio}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    className="w-full bg-transparent border border-border rounded-lg px-4 py-3 text-primary placeholder-secondary focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                    rows={4}
+                    placeholder="Расскажите о себе..."
+                  />
+                ) : (
+                  <p className="text-primary">{profile.bio || 'Не указано'}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Portfolio */}
+            {profile.portfolio_items && profile.portfolio_items.length > 0 && (
+              <div className="mb-8">
+                <h2 className="h2-text text-primary mb-6">Портфолио</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {profile.portfolio_items.map((item, index) => (
+                    <div key={index} className="bg-white/5 border border-border rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-primary mb-3">{item.title}</h3>
+                      <p className="text-secondary mb-4">{item.description}</p>
+                      {item.link && (
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                        >
+                          Ссылка →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Employer Fields */}
+        {profile.role === 'employer' && (
+          <>
+            <div className="mb-8">
+              <h2 className="h2-text text-primary mb-6">О компании</h2>
+              <div className="space-y-6">
+                <div className="bg-white/5 rounded-xl p-6">
+                  <label className="block text-sm text-secondary mb-2">Название</label>
+                  <p className="text-primary font-medium">{profile.company_name}</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-6">
+                  <label className="block text-sm text-secondary mb-2">Сфера</label>
+                  <p className="text-primary font-medium">{profile.industry}</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-6">
+                  <label className="block text-sm text-secondary mb-2">Описание</label>
+                  <p className="text-primary">{profile.company_description}</p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Save Button */}
+        {isEditing && (
+          <div className="mt-8 pt-6 border-t border-border">
+            <button
+              onClick={() => updateProfile(profile)}
+              className="btn-primary px-8 py-3"
+            >
+              Save Changes
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
